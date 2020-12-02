@@ -26,6 +26,7 @@ import qualified Data.Attoparsec.Text as Atto
 import qualified Data.Char as Char
 import Data.Monoid
 import Control.Applicative
+import Control.Monad ((<=<))
 
 data Policy = Policy
   { lower :: Int
@@ -55,7 +56,7 @@ parseLine = do
   pure (policy, password)
 
 readInput :: FilePath -> IO [(Policy, Password)]
-readInput path = either fail pure . traverse (Atto.parseOnly parseLine) =<< Common.parseFile path
+readInput = either fail pure . traverse (Atto.parseOnly parseLine) <=< Common.parseFile
 
 partA :: [(Policy, Password)] -> Int
 partA = getSum . foldMap (Sum . fromEnum . satisfies)

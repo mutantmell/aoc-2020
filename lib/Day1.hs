@@ -24,9 +24,10 @@ import qualified Common
 import Data.Maybe (listToMaybe)
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
+import Control.Monad ((<=<))
 
 readInput :: FilePath -> IO [Int]
-readInput path = either fail pure . traverse (fmap fst . TR.decimal) =<< Common.parseFile path
+readInput = either fail pure . traverse (fmap fst . TR.decimal) <=< Common.parseFile
 
 newtype S1 = S1
   { seen :: [Int]
