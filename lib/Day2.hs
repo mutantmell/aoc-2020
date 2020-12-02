@@ -16,7 +16,6 @@ import GHC.Generics (Generic)
 import Control.Lens ((^?), ix, (^.))
 
 import Data.Generics.Labels ()
-import Data.Generics.Product ()
 import qualified Common
 
 import qualified Data.Foldable as F
@@ -24,8 +23,8 @@ import qualified Data.Foldable as F
 import qualified Data.Attoparsec.Text as Atto
 
 import qualified Data.Char as Char
-import Data.Monoid
-import Control.Applicative
+import Data.Monoid ( Sum(Sum, getSum) )
+import Control.Applicative ( Applicative(liftA2) )
 import Control.Monad ((<=<))
 
 data Policy = Policy
@@ -56,7 +55,9 @@ parseLine = do
   pure (policy, password)
 
 readInput :: FilePath -> IO [(Policy, Password)]
-readInput = either fail pure . traverse (Atto.parseOnly parseLine) <=< Common.parseFile
+readInput = either fail pure
+          . traverse (Atto.parseOnly parseLine)
+          <=< Common.parseFile
 
 partA :: [(Policy, Password)] -> Int
 partA = getSum . foldMap (Sum . fromEnum . satisfies)

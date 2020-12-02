@@ -10,24 +10,23 @@ import Data.Text (Text)
 -- import qualified Data.Text as T
 import qualified Data.Text.Read as TR
 
+import Control.Monad ( (<=<), foldM )
 import Control.Monad.State ( evalState, State )
-
-import Control.Monad ( foldM )
 
 import GHC.Generics ( Generic )
 
 import Data.Generics.Labels ()
-import Data.Generics.Product ()
 import Control.Lens ((%=), use)
 import qualified Data.Foldable as F
 import qualified Common
 import Data.Maybe (listToMaybe)
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
-import Control.Monad ((<=<))
 
 readInput :: FilePath -> IO [Int]
-readInput = either fail pure . traverse (fmap fst . TR.decimal) <=< Common.parseFile
+readInput = either fail pure
+          . traverse (fmap fst . TR.decimal)
+          <=< Common.parseFile
 
 newtype S1 = S1
   { seen :: [Int]
