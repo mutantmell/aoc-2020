@@ -10,7 +10,7 @@ module Day3 where
 
 import GHC.Generics (Generic)
 
-import Control.Lens (over, alaf, ala, (^?!), (%~), (&), ix, (^.), _1, _2, _Unwrapping)
+import Control.Lens (over, alaf, (^?!), (%~), (&), ix, (^.), _1, _2, _Unwrapping)
 
 import Data.Generics.Labels ()
 
@@ -24,9 +24,8 @@ import qualified Data.Foldable as F
 import qualified Data.Witherable as W
 import qualified Data.List as L
 import Data.Monoid (Sum(Sum))
-import Endo (Endo(Endo))
 import Control.Arrow (Kleisli(Kleisli))
-import qualified Common
+import Common (applyN, dup)
 
 data Tile = Tree
           | Open
@@ -77,14 +76,13 @@ readInput = either fail (pure . initForest)
           <=< Text.readFile
 
 treesOnPath :: Int -> Int -> Forest -> Int
-treesOnPath r d = alaf Sum foldMap (fromEnum . hasTree) . L.unfoldr (fmap Common.dup . move)
+treesOnPath r d = alaf Sum foldMap (fromEnum . hasTree) . L.unfoldr (fmap dup . move)
   where
-    applyN n = ala Endo foldMap . L.replicate n
     move = over (_Unwrapping Kleisli) (applyN d) moveDown . applyN r moveRight
     hasTree = (== Tree) . getTile
 
 treesOnPath' :: Int -> Int -> Forest -> Int
-treesOnPath' r d = sum . fmap (fromEnum . hasTree) . L.unfoldr (fmap Common.dup . move r d)
+treesOnPath' r d = sum . fmap (fromEnum . hasTree) . L.unfoldr (fmap dup . move r d)
   where
     hasTree = (== Tree) . getTile
 
