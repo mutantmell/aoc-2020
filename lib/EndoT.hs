@@ -10,7 +10,7 @@ module EndoT where
 
 import Control.Monad ((<=<))
 import GHC.Generics (Generic)
-import Control.Lens (Rewrapped, Wrapped)
+import Control.Lens.Wrapped (Rewrapped, Wrapped)
 
 newtype EndoT m a = EndoT { appEndoT :: a -> m a } deriving (Generic)
 
@@ -20,5 +20,5 @@ instance (Monad m) => Semigroup (EndoT m a) where
 instance (Monad m) => Monoid (EndoT m a) where
   mempty = EndoT pure
 
-instance Wrapped (EndoT m a) where
+instance Wrapped (EndoT m a)
 instance (t ~ EndoT n b) => Rewrapped (EndoT m a) t

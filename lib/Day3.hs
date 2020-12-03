@@ -26,6 +26,7 @@ import qualified Data.List as L
 import Data.Monoid (Product(Product), Sum(Sum))
 import Data.Semigroup (Endo(Endo))
 import EndoT (EndoT(EndoT))
+import Data.Functor.Identity (Identity(Identity, runIdentity))
 
 data Tile = Tree
           | Open
@@ -55,7 +56,7 @@ parseTile = Atto.char '.' $> Open
           <|> Atto.char '#' $> Tree
 
 parseRow :: Atto.Parser [Tile]
-parseRow = Atto.many' parseTile
+parseRow = Atto.many1' parseTile
 
 parseGrid :: Atto.Parser [[Tile]]
 parseGrid = parseRow `Atto.sepBy` Atto.endOfLine
@@ -72,9 +73,8 @@ treesOnPath :: Int -> Int -> Forest -> Int
 treesOnPath r d = alaf Sum foldMap (fromEnum . hasTree) . L.unfoldr (fmap dup . move)
   where
     dup x = (x,x)
-    moveRight' = ala Endo foldMap . flip L.replicate moveRight
-    moveDown' = ala EndoT foldMap . flip L.replicate moveDown
-    move = moveDown' d . moveRight' r
+    applyN f = ala EndoT foldMap . flip L.replicate f
+    move = applyN moveDown d . runIdentity . applyN (Identity . moveRight) r
     hasTree = (== Tree) . getTile
 
 partA :: Forest -> Int
