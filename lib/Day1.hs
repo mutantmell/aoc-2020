@@ -7,7 +7,6 @@
 module Day1 where
 
 import Data.Text (Text)
--- import qualified Data.Text as T
 import qualified Data.Text.Read as TR
 
 import Control.Monad ( (<=<), foldM )
@@ -26,7 +25,7 @@ import qualified Data.IntMap as IntMap
 readInput :: FilePath -> IO [Int]
 readInput = either fail pure
           . traverse (fmap fst . TR.decimal)
-          <=< Common.parseFile
+          <=< Common.parseLines
 
 newtype S1 = S1
   { seen :: [Int]

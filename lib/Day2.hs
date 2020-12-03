@@ -13,7 +13,7 @@ import qualified Data.Text as T
 
 import GHC.Generics (Generic)
 
-import Control.Lens ((^?), ix, (^.))
+import Control.Lens (alaf, (^?), ix, (^.))
 
 import Data.Generics.Labels ()
 import qualified Common
@@ -57,7 +57,7 @@ parseLine = do
 readInput :: FilePath -> IO [(Policy, Password)]
 readInput = either fail pure
           . traverse (Atto.parseOnly parseLine)
-          <=< Common.parseFile
+          <=< Common.parseLines
 
 partA :: [(Policy, Password)] -> Int
 partA = getSum . foldMap (Sum . fromEnum . satisfies)
@@ -67,7 +67,7 @@ partA = getSum . foldMap (Sum . fromEnum . satisfies)
         sumChar = T.length $ T.filter (== policy ^. #char) password
 
 partB :: [(Policy, Password)] -> Int
-partB = getSum . foldMap (Sum . fromEnum . satisfies)
+partB = alaf Sum foldMap (fromEnum . satisfies)
   where
     satisfies (policy, password) = F.elem True $ liftA2 xor lwr upr
       where
