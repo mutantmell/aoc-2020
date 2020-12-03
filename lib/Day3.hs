@@ -26,6 +26,7 @@ import qualified Data.List as L
 import Data.Monoid (Sum(Sum))
 import Endo (Endo(Endo))
 import Control.Arrow (Kleisli(Kleisli))
+import qualified Common
 
 data Tile = Tree
           | Open
@@ -44,6 +45,12 @@ moveRight forest = forest & #location . _1 %~ (`mod` forest ^. #width) . (+1)
 moveDown :: Forest -> Maybe Forest
 moveDown = W.filter (liftA2 (<) (^. #location . _2) (^. #height)) . Just . (#location . _2 %~ (+1))
 --moveDown = W.filter (\f -> f ^. #location . _2 < f ^. #height) . Just . (#location . _2 %~ (+1))
+
+move :: Int -> Int -> Forest -> Maybe Forest
+move r d = W.filter (liftA2 (<) (^. #location . _2) (^. #height)) . Just . move'
+  where
+    move' forest = forest & #location . _1 %~ (`mod` forest ^. #width) . (+r)
+                          & #location . _2 %~ (+d)
 
 getTile :: Forest -> Tile
 getTile forest = forest ^?! #trees . ix (forest ^. #location . _2) . ix (forest ^. #location . _1)
@@ -70,11 +77,15 @@ readInput = either fail (pure . initForest)
           <=< Text.readFile
 
 treesOnPath :: Int -> Int -> Forest -> Int
-treesOnPath r d = alaf Sum foldMap (fromEnum . hasTree) . L.unfoldr (fmap dup . move)
+treesOnPath r d = alaf Sum foldMap (fromEnum . hasTree) . L.unfoldr (fmap Common.dup . move)
   where
-    dup x = (x,x)
     applyN n = ala Endo foldMap . L.replicate n
     move = over (_Unwrapping Kleisli) (applyN d) moveDown . applyN r moveRight
+    hasTree = (== Tree) . getTile
+
+treesOnPath' :: Int -> Int -> Forest -> Int
+treesOnPath' r d = sum . fmap (fromEnum . hasTree) . L.unfoldr (fmap Common.dup . move r d)
+  where
     hasTree = (== Tree) . getTile
 
 partA :: Forest -> Int
