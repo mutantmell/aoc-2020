@@ -10,21 +10,20 @@ module Day3 where
 
 import GHC.Generics (Generic)
 
-import Control.Lens ( alaf, ala, (^?!), (%~), (&), ix, (^.), _2, _1 )
+import Control.Lens (alaf, ala, (^?!), (%~), (&), ix, (^.), _1, _2)
 
 import Data.Generics.Labels ()
 
 import qualified Data.Attoparsec.Text as Atto
 
-import Control.Applicative (liftA2,  (<|>) )
-import Control.Monad ( (<=<) )
+import Control.Applicative (liftA2,  (<|>))
+import Control.Monad ((<=<))
 import qualified Data.Text.IO as Text
-import Data.Functor ( ($>) )
+import Data.Functor (($>))
 import qualified Data.Foldable as F
 import qualified Data.Witherable as W
 import qualified Data.List as L
 import Data.Monoid (Product(Product), Sum(Sum))
-import Data.Semigroup (Endo(Endo))
 import EndoT (EndoT(EndoT))
 import Data.Functor.Identity (Identity(Identity, runIdentity))
 

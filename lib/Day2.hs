@@ -23,8 +23,8 @@ import qualified Data.Foldable as F
 import qualified Data.Attoparsec.Text as Atto
 
 import qualified Data.Char as Char
-import Data.Monoid ( Sum(Sum, getSum) )
-import Control.Applicative ( Applicative(liftA2) )
+import Data.Monoid (Sum(Sum, getSum))
+import Control.Applicative (Applicative(liftA2))
 import Control.Monad ((<=<))
 
 data Policy = Policy

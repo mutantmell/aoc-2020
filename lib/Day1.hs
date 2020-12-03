@@ -9,10 +9,10 @@ module Day1 where
 import Data.Text (Text)
 import qualified Data.Text.Read as TR
 
-import Control.Monad ( (<=<), foldM )
-import Control.Monad.State ( evalState, State )
+import Control.Monad ((<=<), foldM)
+import Control.Monad.State (evalState, State)
 
-import GHC.Generics ( Generic )
+import GHC.Generics (Generic)
 
 import Data.Generics.Labels ()
 import Control.Lens ((%=), use)
@@ -21,6 +21,8 @@ import qualified Common
 import Data.Maybe (listToMaybe)
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
+import Data.IntSet (IntSet)
+import qualified Data.IntSet as IntSet
 
 readInput :: FilePath -> IO [Int]
 readInput = either fail pure
@@ -28,11 +30,11 @@ readInput = either fail pure
           <=< Common.parseLines
 
 newtype S1 = S1
-  { seen :: [Int]
+  { seen :: IntSet
   } deriving (Eq, Show, Generic)
 
 emptyState1 :: S1
-emptyState1 = S1 []
+emptyState1 = S1 IntSet.empty
 
 partA :: [Int] -> Either Text Int
 partA = maybe (Left "unknown value") (Right . uncurry (*))
@@ -43,9 +45,9 @@ partA = maybe (Left "unknown value") (Right . uncurry (*))
     f :: [(Int, Int)] -> Int -> State S1 [(Int, Int)]
     f acc int = do
         seen <- use #seen
-        #seen %= (int:)
+        #seen %= IntSet.insert int
         let wanted = 2020 - int
-        if wanted `F.elem` seen
+        if wanted `IntSet.member` seen
             then pure $ (wanted, int):acc
             else pure acc
 
@@ -60,12 +62,12 @@ partA' = maybe (Left "unknown value") Right .listToMaybe . go [] []
         ans' = if w `F.elem` seen then w*x:ans else ans
 
 data S2 = S2
-  { seen :: [Int]
+  { seen :: IntSet
   , seenPairs :: IntMap (Int, Int)
   } deriving (Eq, Show, Generic)
 
 emptyState2 :: S2
-emptyState2 = S2 [] IntMap.empty
+emptyState2 = S2 IntSet.empty IntMap.empty
 
 partB :: [Int] -> Either Text Int
 partB = maybe (Left "unknown value") Right
@@ -76,9 +78,9 @@ partB = maybe (Left "unknown value") Right
     f :: [Int] -> Int -> State S2 [Int]
     f acc int = do
         seen' <- use #seen
-        #seen %= (int:)
+        #seen %= IntSet.insert int
         seenPairs' <- use #seenPairs
-        #seenPairs %= flip (F.foldl' (\map x -> IntMap.insert (2020 - x - int) (x,int) map)) seen'
+        #seenPairs %= flip (IntSet.foldl' (\map x -> IntMap.insert (2020 - x - int) (x,int) map)) seen'
         case IntMap.lookup int seenPairs' of
             Just (x,y) -> pure $ (x * y * int):acc
             Nothing -> pure acc
