@@ -13,5 +13,9 @@ parseLines file = Text.lines <$> Text.readFile file
 dup :: a -> (a, a)
 dup x = (x,x)
 
-applyN :: (Category c) => Int -> c a a -> c a a
-applyN n = ala Endo foldMap . replicate n
+{-# INLINE applyN #-}
+applyN :: Int -> (a -> a) -> a -> a
+applyN = applyN'
+
+applyN' :: (Category c) => Int -> c a a -> c a a
+applyN' n = ala Endo foldMap . replicate n

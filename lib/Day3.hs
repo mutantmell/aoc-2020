@@ -25,7 +25,7 @@ import qualified Data.Witherable as W
 import qualified Data.List as L
 import Data.Monoid (Sum(Sum))
 import Control.Arrow (Kleisli(Kleisli))
-import Common (applyN, dup)
+import Common (applyN', applyN, dup)
 
 data Tile = Tree
           | Open
@@ -78,7 +78,7 @@ readInput = either fail (pure . initForest)
 treesOnPath :: Int -> Int -> Forest -> Int
 treesOnPath r d = alaf Sum foldMap (fromEnum . hasTree) . L.unfoldr (fmap dup . move)
   where
-    move = over (_Unwrapping Kleisli) (applyN d) moveDown . applyN r moveRight
+    move = over (_Unwrapping Kleisli) (applyN' d) moveDown . applyN r moveRight
     hasTree = (== Tree) . getTile
 
 treesOnPath' :: Int -> Int -> Forest -> Int
