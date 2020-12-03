@@ -8,7 +8,6 @@
 
 module Day3 where
 
-
 import GHC.Generics (Generic)
 
 import Control.Lens ( alaf, ala, (^?!), (%~), (&), ix, (^.), _2, _1 )
@@ -26,8 +25,9 @@ import qualified Data.Witherable as W
 import qualified Data.List as L
 import Data.Monoid (Product(Product), Sum(Sum))
 import Data.Semigroup (Endo(Endo))
+import EndoT (EndoT(EndoT))
 
-data Tile = Tree 
+data Tile = Tree
           | Open
           deriving (Eq, Show, Generic)
 
@@ -73,8 +73,7 @@ treesOnPath r d = alaf Sum foldMap (fromEnum . hasTree) . L.unfoldr (fmap dup . 
   where
     dup x = (x,x)
     moveRight' = ala Endo foldMap . flip L.replicate moveRight
-    moveDown' 0 = pure
-    moveDown' x = moveDown' (x-1) <=< moveDown
+    moveDown' = ala EndoT foldMap . flip L.replicate moveDown
     move = moveDown' d . moveRight' r
     hasTree = (== Tree) . getTile
 
