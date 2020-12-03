@@ -16,7 +16,7 @@ import Data.Generics.Labels ()
 
 import qualified Data.Attoparsec.Text as Atto
 
-import Control.Applicative ( (<|>) )
+import Control.Applicative (liftA2,  (<|>) )
 import Control.Monad ( (<=<) )
 import qualified Data.Text.IO as Text
 import Data.Functor ( ($>) )
@@ -43,7 +43,8 @@ moveRight :: Forest -> Forest
 moveRight forest = forest & #location . _1 %~ (`mod` forest ^. #width) . (+1)
 
 moveDown :: Forest -> Maybe Forest
-moveDown = W.filter (\f -> f ^. #location . _2 < f ^. #height) . Just . (#location . _2 %~ (+1))
+moveDown = W.filter (liftA2 (<) (^. #location . _2) (^. #height)) . Just . (#location . _2 %~ (+1))
+--moveDown = W.filter (\f -> f ^. #location . _2 < f ^. #height) . Just . (#location . _2 %~ (+1))
 
 getTile :: Forest -> Tile
 getTile forest = forest ^?! #trees . ix (forest ^. #location . _2) . ix (forest ^. #location . _1)
