@@ -17,7 +17,7 @@ extra-source-files:  CHANGELOG.md
 
 library
   exposed-modules:     Common
-                     , EndoT
+                     , Endo
                      , Day1
                      , Day2
                      , Day3

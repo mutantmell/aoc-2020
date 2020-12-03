@@ -23,7 +23,7 @@ import qualified Data.Foldable as F
 import qualified Data.Attoparsec.Text as Atto
 
 import qualified Data.Char as Char
-import Data.Monoid (Sum(Sum, getSum))
+import Data.Monoid (Sum(Sum))
 import Control.Applicative (Applicative(liftA2))
 import Control.Monad ((<=<))
 
@@ -59,17 +59,20 @@ readInput = either fail pure
           . traverse (Atto.parseOnly parseLine)
           <=< Common.parseLines
 
+numSatisfies :: (Policy -> Password -> Bool) -> [(Policy, Password)] -> Int
+numSatisfies p = alaf Sum foldMap (fromEnum . uncurry p)
+
 partA :: [(Policy, Password)] -> Int
-partA = getSum . foldMap (Sum . fromEnum . satisfies)
+partA = numSatisfies predicate
   where
-    satisfies (policy, password) = sumChar >= (policy ^. #lower) && sumChar <= policy ^. #upper
+    predicate policy password = sumChar >= (policy ^. #lower) && sumChar <= policy ^. #upper
       where
         sumChar = T.length $ T.filter (== policy ^. #char) password
 
 partB :: [(Policy, Password)] -> Int
-partB = alaf Sum foldMap (fromEnum . satisfies)
+partB = numSatisfies predicate
   where
-    satisfies (policy, password) = F.elem True $ liftA2 xor lwr upr
+    predicate policy password = F.elem True $ liftA2 xor lwr upr
       where
         lwr = password ^? ix (policy ^. #lower - 1)
         upr = password ^? ix (policy ^. #upper - 1)

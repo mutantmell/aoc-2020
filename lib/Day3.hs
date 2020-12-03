@@ -10,7 +10,7 @@ module Day3 where
 
 import GHC.Generics (Generic)
 
-import Control.Lens (alaf, ala, (^?!), (%~), (&), ix, (^.), _1, _2)
+import Control.Lens (over, alaf, ala, (^?!), (%~), (&), ix, (^.), _1, _2, _Unwrapping)
 
 import Data.Generics.Labels ()
 
@@ -23,9 +23,9 @@ import Data.Functor (($>))
 import qualified Data.Foldable as F
 import qualified Data.Witherable as W
 import qualified Data.List as L
-import Data.Monoid (Product(Product), Sum(Sum))
-import EndoT (EndoT(EndoT))
-import Data.Functor.Identity (Identity(Identity, runIdentity))
+import Data.Monoid (Sum(Sum))
+import Endo (Endo(Endo))
+import Control.Arrow (Kleisli(Kleisli))
 
 data Tile = Tree
           | Open
@@ -73,12 +73,12 @@ treesOnPath :: Int -> Int -> Forest -> Int
 treesOnPath r d = alaf Sum foldMap (fromEnum . hasTree) . L.unfoldr (fmap dup . move)
   where
     dup x = (x,x)
-    applyN f = ala EndoT foldMap . flip L.replicate f
-    move = applyN moveDown d . runIdentity . applyN (Identity . moveRight) r
+    applyN n = ala Endo foldMap . L.replicate n
+    move = over (_Unwrapping Kleisli) (applyN d) moveDown . applyN r moveRight
     hasTree = (== Tree) . getTile
 
 partA :: Forest -> Int
 partA = treesOnPath 3 1
 
 partB :: Forest -> Int
-partB = ala Product foldMap . traverse (uncurry treesOnPath) [(1,1), (3,1), (5,1), (7,1), (1,2)]
+partB = product . traverse (uncurry treesOnPath) [(1,1), (3,1), (5,1), (7,1), (1,2)]
