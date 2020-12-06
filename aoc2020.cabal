@@ -24,6 +24,7 @@ library
                      , Day3
                      , Day4
                      , Day5
+                     , Day6
   -- other-modules:       
   -- other-extensions:
   build-depends:       base ^>=4.14.0.0

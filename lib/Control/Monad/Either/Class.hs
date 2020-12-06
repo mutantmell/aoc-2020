@@ -202,7 +202,6 @@ instance (forall a . Monoid a, forall b . Monoid b) => ConjoinedMonadTrans Tuple
   liftLeft = TupleT . fmap (,mempty)
   liftRight = TupleT . fmap (mempty,)
 -}
-
 newtype Swap m a b = Swap { unSwap :: m b a } deriving (Eq, Show)
 
 instance (ConjoinedMonad m) => Functor (Swap m a) where
