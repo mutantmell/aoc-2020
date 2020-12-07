@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -80,7 +81,8 @@ closure' root brs = Tree.unfoldTree f root
   where
     f :: Bag -> (Bag, [Bag])
     f label = (label, sub label)
-    sub label = brs ^.. folded . filteredBy (#canContain . traverse . _2 . only label) . #bag
+    --sub label = brs ^.. folded . filteredBy (#canContain . traverse . _2 . only label) . #bag
+    sub label = brs ^.. to (filter $ has (#canContain . traverse . _2 . only label)) . singleton . #bag
 
 partA :: [BagRule] -> Int
 partA = subtract 1 . F.length . closure ("shiny", "gold")
@@ -88,12 +90,16 @@ partA = subtract 1 . F.length . closure ("shiny", "gold")
 partA' :: [BagRule] -> Int
 partA' = subtract 1 . Set.size . foldMap Set.singleton . closure' ("shiny", "gold")
 
+singleton :: Prism' [a] a
+singleton = prism' (:[]) (\case { [x] -> Just x; _ -> Nothing })
+
 asTree :: Bag -> [BagRule] -> Tree.Tree (Int, Bag)
 asTree root brs = Tree.unfoldTree f (1, root)
   where
     f :: (Int, Bag) -> ((Int, Bag), [(Int, Bag)])
     f node@(num, label) = (node, over traverse (_1 *~ num) (sub label))
-    sub label = brs ^.. folded . filteredBy (#bag . only label) . #canContain . traverse
+    --sub label = brs ^.. folded . filteredBy (#bag . only label) . #canContain . traverse
+    sub label = brs ^.. to (filter $ has (#bag . only label)) . singleton . #canContain . traverse
 
 partB :: [BagRule] -> Int
 partB = subtract 1 . alaf Sum foldMap fst . asTree ("shiny", "gold")
