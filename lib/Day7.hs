@@ -22,7 +22,6 @@ import Data.Functor (($>))
 import qualified Data.Tree as Tree
 
 import Control.Lens
-import Data.Maybe (maybeToList)
 import qualified Data.Set as Set
 import Data.Monoid (Sum(Sum))
 
@@ -94,7 +93,7 @@ asTree root brs = Tree.unfoldTree f (1, root)
   where
     f :: (Int, Bag) -> ((Int, Bag), [(Int, Bag)])
     f node@(num, label) = (node, over traverse (_1 *~ num) (sub label))
-    sub label = maybeToList (F.find (\br -> br ^. #bag == label) brs) >>= (^. #canContain)
+    sub label = brs ^.. folded . filteredBy (#bag . only label) . #canContain . traverse
 
 partB :: [BagRule] -> Int
 partB = subtract 1 . alaf Sum foldMap fst . asTree ("shiny", "gold")
