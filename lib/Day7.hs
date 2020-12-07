@@ -24,6 +24,7 @@ import qualified Data.Tree as Tree
 import Control.Lens
 import Data.Maybe (maybeToList)
 import Data.Monoid (getSum, Sum(Sum))
+import qualified Data.Set as Set
 
 type Bag = (Text, Text)
 data BagRule = BagRule
@@ -75,13 +76,24 @@ closure brs initB = go [] [initB]
         in
           go (b:seen) (bs ++ canContain b)
 
-partA' :: [BagRule] -> [Bag]
-partA' brs = closure brs ("shiny", "gold")
+closure' :: Bag -> [BagRule] -> Tree.Tree Bag
+closure' root brs = Tree.unfoldTree f root
+  where
+    f :: Bag -> (Bag, [Bag])
+    f label = (label, sub label)
+    sub label = brs ^.. folded . filteredBy (#canContain . traverse . _2 . only label) . #bag
+
+partAClosure :: [BagRule] -> [Bag]
+partAClosure brs = closure brs ("shiny", "gold")
+
+partAClosure' :: [BagRule] -> Tree.Tree Bag
+partAClosure' = closure' ("shiny", "gold")
 
 partA :: [BagRule] -> Int
-partA = subtract 1 . F.length . partA'
+partA = subtract 1 . F.length . partAClosure
 
-type NestedBags = Tree.Tree (Bag, Int)
+partA' :: [BagRule] -> Int
+partA' = subtract 1 . Set.size . foldMap Set.singleton . partAClosure'
 
 asTree :: Bag -> [BagRule] -> Tree.Tree (Int, Bag)
 asTree root brs = Tree.unfoldTree f (1, root)
@@ -90,8 +102,8 @@ asTree root brs = Tree.unfoldTree f (1, root)
     f node@(num, label) = (node, over traverse (_1 *~ num) (sub label))
     sub label = maybeToList (F.find (\br -> br ^. #bag == label) brs) >>= (^. #canContain)
 
-partB' :: [BagRule] -> Tree.Tree (Int, Bag)
-partB' = asTree ("shiny", "gold")
+partBClosure :: [BagRule] -> Tree.Tree (Int, Bag)
+partBClosure = asTree ("shiny", "gold")
 
 partB :: [BagRule] -> Int
-partB = subtract 1 . alaf Sum foldMap fst . partB'
+partB = subtract 1 . alaf Sum foldMap fst . partBClosure
