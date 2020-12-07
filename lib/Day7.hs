@@ -23,8 +23,8 @@ import qualified Data.Tree as Tree
 
 import Control.Lens
 import Data.Maybe (maybeToList)
-import Data.Monoid (getSum, Sum(Sum))
 import qualified Data.Set as Set
+import Data.Monoid (Sum(Sum))
 
 type Bag = (Text, Text)
 data BagRule = BagRule
@@ -61,8 +61,8 @@ readInput = either fail pure
           . Atto.parseOnly parseFile
           <=< Text.readFile
 
-closure :: [BagRule] -> Bag -> [Bag]
-closure brs initB = go [] [initB]
+closure :: Bag -> [BagRule] -> [Bag]
+closure root brs = go [] [root]
   where
     go :: [Bag] -> [Bag] -> [Bag]
     go seen [] = seen
@@ -83,17 +83,11 @@ closure' root brs = Tree.unfoldTree f root
     f label = (label, sub label)
     sub label = brs ^.. folded . filteredBy (#canContain . traverse . _2 . only label) . #bag
 
-partAClosure :: [BagRule] -> [Bag]
-partAClosure brs = closure brs ("shiny", "gold")
-
-partAClosure' :: [BagRule] -> Tree.Tree Bag
-partAClosure' = closure' ("shiny", "gold")
-
 partA :: [BagRule] -> Int
-partA = subtract 1 . F.length . partAClosure
+partA = subtract 1 . F.length . closure ("shiny", "gold")
 
 partA' :: [BagRule] -> Int
-partA' = subtract 1 . Set.size . foldMap Set.singleton . partAClosure'
+partA' = subtract 1 . Set.size . foldMap Set.singleton . closure' ("shiny", "gold")
 
 asTree :: Bag -> [BagRule] -> Tree.Tree (Int, Bag)
 asTree root brs = Tree.unfoldTree f (1, root)
@@ -102,8 +96,5 @@ asTree root brs = Tree.unfoldTree f (1, root)
     f node@(num, label) = (node, over traverse (_1 *~ num) (sub label))
     sub label = maybeToList (F.find (\br -> br ^. #bag == label) brs) >>= (^. #canContain)
 
-partBClosure :: [BagRule] -> Tree.Tree (Int, Bag)
-partBClosure = asTree ("shiny", "gold")
-
 partB :: [BagRule] -> Int
-partB = subtract 1 . alaf Sum foldMap fst . partBClosure
+partB = subtract 1 . alaf Sum foldMap fst . asTree ("shiny", "gold")
