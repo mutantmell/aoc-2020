@@ -10,8 +10,6 @@ module Day9 where
 import qualified Data.Attoparsec.Text as Atto
 import qualified Data.Foldable as F
 
-import Data.Generics.Labels ()
-
 import qualified Data.Text.IO as Text
 import Control.Monad ((<=<))
 import Control.Lens
@@ -19,7 +17,7 @@ import Control.Applicative
 import Data.Maybe (maybeToList)
 import qualified Data.List as L
 
-type Preamble = [Int]
+type Preamble a = [a]
 
 parseFile :: (Integral a) => Atto.Parser [a]
 parseFile = Atto.decimal `Atto.sepBy'` Atto.endOfLine
@@ -29,26 +27,32 @@ readInput = either fail pure
           . Atto.parseOnly parseFile
           <=< Text.readFile
 
-runs :: Int -> [a] -> [([a], a)]
+runs :: (Integral a) => Int -> [a] -> [(Preamble a, a)]
 runs n = maybeToList . unsnoc . take (n+1) <=< L.tails
 
-pairs :: [Int] -> [Int]
+pairs :: (Integral a) => [a] -> [a]
 pairs n = [ x+y | x<-n, y<-n ]
 
-notSumPair :: [Int] -> Int -> Bool
-notSumPair pairs v = not $ F.any (== v) pairs
+notSumPair :: (Integral a) => [a] -> a -> Bool
+notSumPair pairs v = F.all (/= v) pairs
 
-runA :: Int -> [Int] -> Int
-runA preSize = maybe (-1) snd . F.find (uncurry notSumPair) . over (traverse._1) pairs . runs preSize
+runA :: (Integral a) => Int -> [a] -> a
+runA preSize = maybe (-1) snd
+             . F.find (uncurry notSumPair)
+             . over (traverse . _1) pairs
+             . runs preSize
 
-partA :: [Int] -> Int
+partA :: [Integer] -> Integer
 partA = runA 25
 
 partA'soln :: Integer
 partA'soln = 26796446
 
-runB :: Integer -> [Integer] -> (Integer, Integer)
-runB v = maybe (-1,-1) (liftA2 (,) L.maximum L.minimum) . F.find ((== v) . sum) . filter (not . null) . (L.tails <=< L.inits)
+runB :: (Integral a) => a -> [a] -> (a, a)
+runB v = maybe (-1,-1) (liftA2 (,) L.maximum L.minimum)
+       . F.find ((== v) . sum)
+       . (L.tails <=< L.inits)
 
 partB :: [Integer] -> Integer
+-- partB = uncurry (+) . (runB =<< runA 25)
 partB = uncurry (+) . runB partA'soln
