@@ -27,6 +27,7 @@ import GHC.Generics (Generic)
 import Data.Functor (($>))
 import Control.Applicative (Alternative((<|>)))
 import qualified Debug.Trace as Debug
+import Data.Functor.Compose (Compose(Compose))
 
 data Command = Nor Int
              | Sou Int
@@ -94,8 +95,14 @@ step (For n) = moveHeading n
 manhattan :: (Int, Int) -> Int
 manhattan (x,y) = abs x + abs y
 
+_dual :: Iso' (Dual a) a
+_dual = _Wrapped
+
+_endo :: Iso' (Endo a) (a->a)
+_endo = _Wrapped
+
 partA :: Seq.Seq Command -> Int
-partA = manhattan . view #position . ($ initShip) . ala Endo foldMap . fmap step . Seq.reverse
+partA = manhattan . view #position . ($ initShip) . auf (_dual._endo) foldMap step
 
 data Ship' = Ship'
   { position :: (Int, Int) -- x,y
@@ -130,4 +137,4 @@ step' (Rig n) = #waypoint %~ rotRight' n
 step' (For n) = moveHeading' n
 
 partB :: Seq.Seq Command -> Int
-partB = manhattan . view #position . ($ initShip') . ala Endo foldMap . fmap step' . Seq.reverse
+partB = manhattan . view #position . ($ initShip') . auf (_dual._endo) foldMap step'
