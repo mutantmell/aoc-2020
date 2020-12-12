@@ -1,14 +1,9 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DeriveFunctor #-}
@@ -36,7 +31,7 @@ import Data.Functor.Classes (eq1, showsPrec1, showsUnaryWith, Eq1(..), Show1(..)
 import Data.Bifunctor (Bifunctor(..))
 import Data.Functor ((<&>))
 import Data.These (These(..))
-import Data.Kind
+import Data.Coerce
 
 -- EitherT and Instances
 
@@ -154,93 +149,23 @@ instance (Monad m, Monoid w) => Monad (TheseT m w) where
       That c -> These a c
       These a' c -> These (a <> a') c
 
--- Swap instances
-
-newtype Swap m a b = Swap { unSwap :: m b a } deriving (Eq, Show)
-
-instance (Functor f) => Functor (Swap (EitherT f) a) where
-  fmap f (Swap efab) = Swap $ first f efab
-
-instance (Applicative m) => Applicative (Swap (EitherT m) a) where
-  pure = Swap . EitherT . pure . Left
-  liftA2 f (Swap (EitherT efx)) (Swap (EitherT eax)) = Swap . EitherT $ f' <$> efx <*> eax
-    where
-      f' (Left a) (Left b) = Left $ f a b
-      f' (Right x) _ = Right x
-      f' _ (Right x) = Right x
-
-instance (Monad m) => Monad (Swap (EitherT m) a) where
-  (Swap (EitherT mae)) >>= f = Swap $ EitherT $ mae >>= \case
-    (Right x) -> pure $ Right x
-    (Left a) -> runEitherT (unSwap (f a))
-
-instance (Functor f) => Functor (Swap (TupleT f) a) where
-  fmap f (Swap efab) = Swap $ first f efab
-
-instance (Monoid a, Applicative m) => Applicative (Swap (TupleT m) a) where
-  pure = Swap . TupleT . pure . (,mempty)
-  liftA2 f (Swap (TupleT efx)) (Swap (TupleT eax)) = Swap . TupleT $ f' <$> efx <*> eax
-    where
-      f' (a,x) (b,x') = (f a b, x <> x')
-
-instance (Monoid a, Monad m) => Monad (Swap (TupleT m) a) where
-  (Swap (TupleT mae)) >>= f = Swap $ TupleT $ mae >>= \case
-    (a,x) -> runTupleT (unSwap (f a)) <&> \case
-      (b, x') -> (b, x <> x')
-
-instance (Functor f) => Functor (Swap (TheseT f) a) where
-  fmap f (Swap efab) = Swap $ first f efab
-
-instance (Monoid a, Applicative m) => Applicative (Swap (TheseT m) a) where
-  pure = Swap . TheseT . pure . This
-  liftA2 f (Swap (TheseT efx)) (Swap (TheseT eax)) = Swap . TheseT $ f' <$> efx <*> eax
-    where
-      f' (This a) (This b) = This (f a b)
-      f' (This _) (That x') = That x'
-      f' (This a) (These b x') = These (f a b) x'
-      f' (That x) _ = That x
-      f' (These a x) (This b) = These (f a b) x
-      f' (These _ x) (That x') = That (x <> x')
-      f' (These a x) (These b x') = These (f a b) (x <> x')
-
-instance (Monoid a, Monad m) => Monad (Swap (TheseT m) a) where
-  (Swap (TheseT mt)) >>= f = Swap $ TheseT $ mt >>= \case
-    This a -> runTheseT . unSwap $ f a
-    That b -> pure $ That b
-    These a x -> runTheseT (unSwap (f a)) <&> \case
-      This b -> These b x
-      That x' -> That (x <> x')
-      These b x' -> These b (x <> x')
-
 -- class (Bifunctor m, forall e . Applicative (m e)) => MonadXApplicative m where
 
+-- could split this out into a ConjoinedApplicative and a ConjoinedMonad
+class (Bifunctor m, forall e . Monad (m e)) => ConjoinedMonad m where
+  throw :: e -> m e a
+  handle :: m e a -> (e -> m f a) -> m f a
 
-class (forall a . c a => Monad (m a), forall e . d e => Monad (Swap m e)) => ConjoinedMonad c d m where
-  throw :: (d a) => e -> m e a
-  default throw :: (d a) => e -> m e a
-  throw e = unSwap $ pure e
+instance ConjoinedMonad Either where
+  throw = Left
+  (Left e) `handle` f = f e
+  (Right a) `handle` _ = Right a
 
-  handle :: (d a) => m e a -> (e -> m f a) -> m f a
-  default handle :: (d a) => m e a -> (e -> m f a) -> m f a
-  cm `handle` f = unSwap $ Swap cm >>= Swap . f
-
-class Empty x
-instance Empty x
-
-instance (Monad m) => ConjoinedMonad Empty Empty (EitherT m) where
-instance (Monad m) => ConjoinedMonad Monoid Monoid (TupleT m) where
-instance (Monad m) => ConjoinedMonad Monoid Monoid (TheseT m) where
-
--- instance ConjoinedMonad Either where
---   throw = Left
---   (Left e) `handle` f = f e
---   (Right a) `handle` _ = Right a
-
--- instance (Monad m) => ConjoinedMonad (EitherT m) where
---   throw = EitherT . pure . Left
---   (EitherT met) `handle` f = EitherT $ met >>= \case
---     (Left e) -> runEitherT $ f e
---     (Right a) -> pure $ Right a
+instance (Monad m) => ConjoinedMonad (EitherT m) where
+  throw = EitherT . pure . Left
+  (EitherT met) `handle` f = EitherT $ met >>= \case
+    (Left e) -> runEitherT $ f e
+    (Right a) -> pure $ Right a
 
 {-
 instance (forall m w a . m w a ~ (w,a) => Monoid a) => ConjoinedMonad (,) where
@@ -277,3 +202,23 @@ instance (forall a . Monoid a, forall b . Monoid b) => ConjoinedMonadTrans Tuple
   liftLeft = TupleT . fmap (,mempty)
   liftRight = TupleT . fmap (mempty,)
 -}
+newtype Swap m a b = Swap { unSwap :: m b a } deriving (Eq, Show)
+
+instance (ConjoinedMonad m) => Functor (Swap m a) where
+  fmap f (Swap m) = Swap $ first f m
+
+instance (ConjoinedMonad m) => Bifunctor (Swap m) where
+  bimap f g (Swap m) = Swap $ bimap g f m
+  first f (Swap m) = Swap $ second f m
+  second g (Swap m) = Swap $ first g m
+
+instance (ConjoinedMonad m) => Applicative (Swap m a) where
+  pure = Swap . throw
+  (Swap mf) <*> (Swap ma) = Swap $ mf `handle` \f -> ma `handle` \a -> throw (f a)
+
+instance (ConjoinedMonad m) => Monad (Swap m a) where
+  (Swap ma) >>= f = Swap $ ma `handle` (unSwap . f)
+
+instance (ConjoinedMonad m) => ConjoinedMonad (Swap m) where
+  throw = Swap . pure
+  (Swap ma) `handle` f = Swap $ ma >>= (unSwap . f)
