@@ -16,18 +16,13 @@ import qualified Data.Text.IO as Text
 import Control.Monad ((<=<))
 import Control.Lens
 
-import qualified Data.Witherable as W
 import Data.Monoid
 
 import Data.Generics.Labels ()
 
 import qualified Data.Sequence as Seq
-import qualified Data.Foldable as F
 import GHC.Generics (Generic)
-import Data.Functor (($>))
 import Control.Applicative (Alternative((<|>)))
-import qualified Debug.Trace as Debug
-import Data.Functor.Compose (Compose(Compose))
 
 data Command = Nor Int
              | Sou Int
